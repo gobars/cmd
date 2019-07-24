@@ -58,24 +58,28 @@ import (
 // should not be modified, except Env which can be set before calling Start.
 // To create a new Cmd, call NewCmd or NewCmdOptions.
 type Cmd struct {
-	Name   string
-	Args   []string
-	Env    []string
-	Dir    string
-	Stdout chan string // streaming STDOUT if enabled, else nil (see Options)
-	Stderr chan string // streaming STDERR if enabled, else nil (see Options)
-	*sync.Mutex
-	started    bool          // cmd.Start called, no error
-	stopped    bool          // Stop called
-	done       bool          // run() done
-	final      bool          // status finalized in Status
-	startTime  time.Time     // if started true
-	stdout     *OutputBuffer // low-level stdout buffering and streaming
-	stderr     *OutputBuffer // low-level stderr buffering and streaming
-	status     Status
+	Name string
+	Args []string
+	Env  []string
+	Dir  string
+
+	Stdout     chan string   // streaming STDOUT if enabled, else nil (see Options)
+	Stderr     chan string   // streaming STDERR if enabled, else nil (see Options)
 	statusChan chan Status   // nil until Start() called
 	doneChan   chan struct{} // closed when done running
-	buffered   bool          // buffer STDOUT and STDERR to Status.Stdout and Std
+
+	*sync.Mutex
+
+	started  bool // cmd.Start called, no error
+	stopped  bool // Stop called
+	done     bool // run() done
+	final    bool // status finalized in Status
+	buffered bool // buffer STDOUT and STDERR to Status.Stdout and Std
+
+	startTime time.Time     // if started true
+	stdout    *OutputBuffer // low-level stdout buffering and streaming
+	stderr    *OutputBuffer // low-level stderr buffering and streaming
+	status    Status
 }
 
 // Status represents the running status and consolidated return of a Cmd. It can
@@ -147,8 +151,8 @@ func NewCmdOptions(options Options, name string, args ...string) *Cmd {
 	out := NewCmd(name, args...)
 	out.buffered = options.Buffered
 	if options.Streaming {
-		out.Stdout = make(chan string, DEFAULT_STREAM_CHAN_SIZE)
-		out.Stderr = make(chan string, DEFAULT_STREAM_CHAN_SIZE)
+		out.Stdout = make(chan string, DefaultStreamChanSize)
+		out.Stderr = make(chan string, DefaultStreamChanSize)
 	}
 	return out
 }
@@ -244,7 +248,7 @@ func (c *Cmd) Status() Status {
 		}
 	} else {
 		// Still running
-		c.status.Runtime = time.Now().Sub(c.startTime).Seconds()
+		c.status.Runtime = time.Since(c.startTime).Seconds()
 		if c.buffered {
 			c.status.Stdout = c.stdout.Lines()
 			c.status.Stderr = c.stderr.Lines()
@@ -281,23 +285,24 @@ func (c *Cmd) run() {
 
 	// Write stdout and stderr to buffers that are safe to read while writing
 	// and don't cause a race condition.
-	if c.buffered && c.Stdout != nil {
+	switch {
+	case c.buffered && c.Stdout != nil:
 		// Buffered and streaming, create both and combine with io.MultiWriter
 		c.stdout = NewOutputBuffer()
 		c.stderr = NewOutputBuffer()
 		cmd.Stdout = io.MultiWriter(NewOutputStream(c.Stdout), c.stdout)
 		cmd.Stderr = io.MultiWriter(NewOutputStream(c.Stderr), c.stderr)
-	} else if c.buffered {
+	case c.buffered:
 		// Buffered only
 		c.stdout = NewOutputBuffer()
 		c.stderr = NewOutputBuffer()
 		cmd.Stdout = c.stdout
 		cmd.Stderr = c.stderr
-	} else if c.Stdout != nil {
+	case c.Stdout != nil:
 		// Streaming only
 		cmd.Stdout = NewOutputStream(c.Stdout)
 		cmd.Stderr = NewOutputStream(c.Stderr)
-	} else {
+	default:
 		// No output (effectively >/dev/null 2>&1)
 		cmd.Stdout = nil
 		cmd.Stderr = nil
@@ -342,7 +347,7 @@ func (c *Cmd) run() {
 	exitCode := 0
 	signaled := false
 	if err != nil {
-		switch err.(type) {
+		switch errt := err.(type) {
 		case *exec.ExitError:
 			// This is the normal case which is not really an error. It's string
 			// representation is only "*exec.ExitError". It only means the cmd
@@ -352,13 +357,12 @@ func (c *Cmd) run() {
 			// "*exec.ExitError". With the real type we can get the non-zero
 			// exit code and determine if the process was signaled, which yields
 			// a more specific error message, so we set err again in that case.
-			exiterr := err.(*exec.ExitError)
 			err = nil
-			if waitStatus, ok := exiterr.Sys().(syscall.WaitStatus); ok {
+			if waitStatus, ok := errt.Sys().(syscall.WaitStatus); ok {
 				exitCode = waitStatus.ExitStatus() // -1 if signaled
 				if waitStatus.Signaled() {
 					signaled = true
-					err = errors.New(exiterr.Error()) // "signal: terminated"
+					err = errors.New(errt.Error()) // "signal: terminated"
 				}
 			}
 		default:
@@ -456,13 +460,13 @@ const (
 	// DEFAULT_LINE_BUFFER_SIZE is the default size of the OutputStream line buffer.
 	// The default value is usually sufficient, but if ErrLineBufferOverflow errors
 	// occur, try increasing the size by calling OutputBuffer.SetLineBufferSize.
-	DEFAULT_LINE_BUFFER_SIZE = 16384
+	DefaultLineBufferSize = 16384
 
 	// DEFAULT_STREAM_CHAN_SIZE is the default string channel size for a Cmd when
 	// Options.Streaming is true. The string channel size can have a minor
 	// performance impact if too small by causing OutputStream.Write to block
 	// excessively.
-	DEFAULT_STREAM_CHAN_SIZE = 1000
+	DefaultStreamChanSize = 1000
 )
 
 // ErrLineBufferOverflow is returned by OutputStream.Write when the internal
@@ -533,8 +537,8 @@ func NewOutputStream(streamChan chan string) *OutputStream {
 	out := &OutputStream{
 		streamChan: streamChan,
 		// --
-		bufSize:  DEFAULT_LINE_BUFFER_SIZE,
-		buf:      make([]byte, DEFAULT_LINE_BUFFER_SIZE),
+		bufSize:  DefaultLineBufferSize,
+		buf:      make([]byte, DefaultLineBufferSize),
 		lastChar: 0,
 	}
 	return out
@@ -561,7 +565,7 @@ LINES:
 		// we allow \r\n but strip the \r too by decrementing the offset for that byte.
 		lastChar := firstChar + newlineOffset // "line\n"
 		if newlineOffset > 0 && p[newlineOffset-1] == '\r' {
-			lastChar -= 1 // "line\r\n"
+			lastChar-- // "line\r\n"
 		}
 
 		// Send the line, prepend line buffer if set
@@ -598,7 +602,7 @@ LINES:
 		rw.lastChar += remain
 	}
 
-	return // implicit
+	return n, err // implicit
 }
 
 // Lines returns the channel to which lines are sent. This is the same channel

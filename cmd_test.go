@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-cmd/cmd"
+	"github.com/bingoohuang/cmd"
 	"github.com/go-test/deep"
 )
 
@@ -243,7 +243,7 @@ func TestCmdNotFound(t *testing.T) {
 		PID:      0,
 		Complete: false,
 		Exit:     -1,
-		Error:    errors.New(`exec: "cmd-does-not-exist": executable file not found in $PATH`),
+		Error:    &exec.Error{Name: "cmd-does-not-exist", Err: errors.New(`executable file not found in $PATH`)},
 		Runtime:  0,
 		Stdout:   nil,
 		Stderr:   nil,
@@ -273,7 +273,7 @@ func TestCmdLost(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	syscall.Kill(-pgid, syscall.SIGKILL) // -pid = process group of pid
+	_ = syscall.Kill(-pgid, syscall.SIGKILL) // -pid = process group of pid
 
 	// Even though killed externally, our wait should return instantly
 	timeout := time.After(1 * time.Second)
@@ -555,7 +555,7 @@ func TestStreamingMultipleLines(t *testing.T) {
 	}
 
 	// "foo" should be sent before "bar" because that was the input
-	if gotLine != "foo" {
+	if gotLine != "foo" { // nolint
 		t.Errorf("got line: '%s', expected 'foo'", gotLine)
 	}
 
@@ -733,16 +733,16 @@ func TestStreamingErrLineBufferOverflow1(t *testing.T) {
 	// Overflow the line buffer in 1 write. The first line "bc" is sent,
 	// but the remaining line can't be buffered because it's +2 bytes larger
 	// than the line buffer.
-	longLine := make([]byte, 3+cmd.DEFAULT_LINE_BUFFER_SIZE+2) // "bc\nAAA...zz"
+	longLine := make([]byte, 3+cmd.DefaultLineBufferSize+2) // "bc\nAAA...zz"
 	longLine[0] = 'b'
 	longLine[1] = 'c'
 	longLine[2] = '\n'
-	for i := 3; i < cmd.DEFAULT_LINE_BUFFER_SIZE; i++ {
+	for i := 3; i < cmd.DefaultLineBufferSize; i++ {
 		longLine[i] = 'A'
 	}
 	// These 2 chars cause ErrLineBufferOverflow:
-	longLine[cmd.DEFAULT_LINE_BUFFER_SIZE] = 'z'
-	longLine[cmd.DEFAULT_LINE_BUFFER_SIZE+1] = 'z'
+	longLine[cmd.DefaultLineBufferSize] = 'z'
+	longLine[cmd.DefaultLineBufferSize+1] = 'z'
 
 	lines := make(chan string, 5)
 	out := cmd.NewOutputStream(lines)
@@ -752,19 +752,18 @@ func TestStreamingErrLineBufferOverflow1(t *testing.T) {
 	if n != 3 { // "bc\n"
 		t.Errorf("Write n = %d, expected 3", n)
 	}
-	switch err.(type) {
+	switch errt := err.(type) {
 	case cmd.ErrLineBufferOverflow:
-		lbo := err.(cmd.ErrLineBufferOverflow)
-		if lbo.BufferSize != cmd.DEFAULT_LINE_BUFFER_SIZE {
-			t.Errorf("ErrLineBufferOverflow.BufferSize = %d, expected %d", lbo.BufferSize, cmd.DEFAULT_LINE_BUFFER_SIZE)
+		if errt.BufferSize != cmd.DefaultLineBufferSize {
+			t.Errorf("ErrLineBufferOverflow.BufferSize = %d, expected %d", errt.BufferSize, cmd.DefaultLineBufferSize)
 		}
-		if lbo.BufferFree != cmd.DEFAULT_LINE_BUFFER_SIZE {
-			t.Errorf("ErrLineBufferOverflow.BufferFree = %d, expected %d", lbo.BufferFree, cmd.DEFAULT_LINE_BUFFER_SIZE)
+		if errt.BufferFree != cmd.DefaultLineBufferSize {
+			t.Errorf("ErrLineBufferOverflow.BufferFree = %d, expected %d", errt.BufferFree, cmd.DefaultLineBufferSize)
 		}
-		if lbo.Line != string(longLine[3:]) {
-			t.Errorf("ErrLineBufferOverflow.Line = '%s', expected '%s'", lbo.Line, string(longLine[3:]))
+		if errt.Line != string(longLine[3:]) {
+			t.Errorf("ErrLineBufferOverflow.Line = '%s', expected '%s'", errt.Line, string(longLine[3:]))
 		}
-		if lbo.Error() == "" {
+		if errt.Error() == "" {
 			t.Errorf("ErrLineBufferOverflow.Error() string is empty, expected something")
 		}
 	default:
@@ -830,25 +829,24 @@ func TestStreamingErrLineBufferOverflow2(t *testing.T) {
 	}
 
 	// Buffer contains "bar", now wverflow it on 2nd write
-	longLine := make([]byte, cmd.DEFAULT_LINE_BUFFER_SIZE)
-	for i := 0; i < cmd.DEFAULT_LINE_BUFFER_SIZE; i++ {
+	longLine := make([]byte, cmd.DefaultLineBufferSize)
+	for i := 0; i < cmd.DefaultLineBufferSize; i++ {
 		longLine[i] = 'X'
 	}
 	n, err = out.Write(longLine)
 	if n != 0 {
 		t.Errorf("Write n = %d, expected 0", n)
 	}
-	switch err.(type) {
+	switch errt := err.(type) {
 	case cmd.ErrLineBufferOverflow:
-		lbo := err.(cmd.ErrLineBufferOverflow)
 		// Buffer has "bar" so it's free is total - 3
-		if lbo.BufferFree != cmd.DEFAULT_LINE_BUFFER_SIZE-3 {
-			t.Errorf("ErrLineBufferOverflow.BufferFree = %d, expected %d", lbo.BufferFree, cmd.DEFAULT_LINE_BUFFER_SIZE)
+		if errt.BufferFree != cmd.DefaultLineBufferSize-3 {
+			t.Errorf("ErrLineBufferOverflow.BufferFree = %d, expected %d", errt.BufferFree, cmd.DefaultLineBufferSize)
 		}
 		// Up to but not include "bc\n" because it should have been truncated
 		expectLine := "bar" + string(longLine)
-		if lbo.Line != expectLine {
-			t.Errorf("ErrLineBufferOverflow.Line = '%s', expected '%s'", lbo.Line, expectLine)
+		if errt.Line != expectLine {
+			t.Errorf("ErrLineBufferOverflow.Line = '%s', expected '%s'", errt.Line, expectLine)
 		}
 	default:
 		t.Errorf("got err '%v', expected cmd.ErrLineBufferOverflow", err)
@@ -859,19 +857,19 @@ func TestStreamingSetLineBufferSize(t *testing.T) {
 	// Same overflow as TestStreamingErrLineBufferOverflow1 but before we use
 	// stream output, we'll increase buffer size by calling SetLineBufferSize
 	// which should prevent the overflow
-	longLine := make([]byte, 3+cmd.DEFAULT_LINE_BUFFER_SIZE+2) // "bc\nAAA...z\n"
+	longLine := make([]byte, 3+cmd.DefaultLineBufferSize+2) // "bc\nAAA...z\n"
 	longLine[0] = 'b'
 	longLine[1] = 'c'
 	longLine[2] = '\n'
-	for i := 3; i < cmd.DEFAULT_LINE_BUFFER_SIZE; i++ {
+	for i := 3; i < cmd.DefaultLineBufferSize; i++ {
 		longLine[i] = 'A'
 	}
-	longLine[cmd.DEFAULT_LINE_BUFFER_SIZE] = 'z'
-	longLine[cmd.DEFAULT_LINE_BUFFER_SIZE+1] = '\n'
+	longLine[cmd.DefaultLineBufferSize] = 'z'
+	longLine[cmd.DefaultLineBufferSize+1] = '\n'
 
 	lines := make(chan string, 5)
 	out := cmd.NewOutputStream(lines)
-	out.SetLineBufferSize(cmd.DEFAULT_LINE_BUFFER_SIZE * 2)
+	out.SetLineBufferSize(cmd.DefaultLineBufferSize * 2)
 
 	n, err := out.Write(longLine)
 	if err != nil {
@@ -898,7 +896,7 @@ func TestStreamingSetLineBufferSize(t *testing.T) {
 	default:
 		t.Fatal("blocked on <-lines")
 	}
-	expectLine := string(longLine[3 : cmd.DEFAULT_LINE_BUFFER_SIZE+1]) // not newline
+	expectLine := string(longLine[3 : cmd.DefaultLineBufferSize+1]) // not newline
 	if gotLine != expectLine {
 		t.Errorf("got line: '%s', expected '%s'", gotLine, expectLine)
 	}
