@@ -4,9 +4,21 @@
 
 This package is a small but very useful wrapper around [os/exec.Cmd](https://golang.org/pkg/os/exec/#Cmd) for Linux and macOS that makes it safe and simple to run external commands in highly concurrent, asynchronous, real-time applications. Here's the look and feel:
 
+### examples
+
 ```go
 import "github.com/bingoohuang/cmd"
 
+cmd.Bash(`echo "Hello"`)
+cmd.BashLiner(`echo hello; sleep 2; echo world;`, func(line string) bool {
+    /* do sth */
+    return true
+}, cmd.Timeout(30*time.Second))
+
+cmd.Run("echo", "foo")
+```
+
+```go
 // Start a long-running process, capture stdout and stderr
 findCmd := cmd.NewCmd("find", "/", "--name", "needle")
 statusChan := findCmd.Start() // non-blocking

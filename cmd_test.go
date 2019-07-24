@@ -210,7 +210,7 @@ func TestCmdOutput(t *testing.T) {
 	p.Start()
 
 	touchFile := func(file string) {
-		if err := exec.Command("touch", file).Run(); err != nil {
+		if _, result := cmd.Run("touch", file); result.Error != nil {
 			t.Fatal(err)
 		}
 		time.Sleep(600 * time.Millisecond)
@@ -342,7 +342,7 @@ func TestCmdBothOutput(t *testing.T) {
 	}
 
 	touchFile := func(file string) {
-		if err := exec.Command("touch", file).Run(); err != nil {
+		if _, result := cmd.Run("touch", file); result.Error != nil {
 			t.Fatal(err)
 		}
 		time.Sleep(500 * time.Millisecond)
