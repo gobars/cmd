@@ -7,7 +7,7 @@
 //
 //   import (
 //       "fmt"
-//       "github.com/go-cmd/cmd"
+//       "github.com/bingoohuang/cmd"
 //   )
 //
 //   func main() {
@@ -406,7 +406,7 @@ func (c *Cmd) run() {
 // a Go standard library os/exec.Command:
 //
 //   import "os/exec"
-//   import "github.com/go-cmd/cmd"
+//   import "github.com/bingoohuang/cmd"
 //   runnableCmd := exec.Command(...)
 //   stdout := cmd.NewOutputBuffer()
 //   runnableCmd.Stdout = stdout
@@ -498,7 +498,7 @@ func (e ErrLineBufferOverflow) Error() string {
 // OutputStream directly with a Go standard library os/exec.Command:
 //
 //   import "os/exec"
-//   import "github.com/go-cmd/cmd"
+//   import "github.com/bingoohuang/cmd"
 //
 //   stdoutChan := make(chan string, 100)
 //   go func() {

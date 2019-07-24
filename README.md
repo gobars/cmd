@@ -1,11 +1,11 @@
-# go-cmd/Cmd
+# bingoohuang/dmd
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/go-cmd/cmd)](https://goreportcard.com/report/github.com/go-cmd/cmd) [![Build Status](https://travis-ci.org/go-cmd/cmd.svg?branch=master)](https://travis-ci.org/go-cmd/cmd) [![Coverage Status](https://coveralls.io/repos/github/go-cmd/cmd/badge.svg?branch=master)](https://coveralls.io/github/go-cmd/cmd?branch=master) [![GoDoc](https://godoc.org/github.com/go-cmd/cmd?status.svg)](https://godoc.org/github.com/go-cmd/cmd)
+[![Go Report Card](https://goreportcard.com/badge/github.com/bingoohuang/cmd)](https://goreportcard.com/report/github.com/bingoohuang/cmd) [![Build Status](https://travis-ci.org/bingoohuang/cmd.svg?branch=master)](https://travis-ci.org/bingoohuang/cmd) [![Coverage Status](https://coveralls.io/repos/github/bingoohuang/cmd/badge.svg?branch=master)](https://coveralls.io/github/bingoohuang/cmd?branch=master) [![GoDoc](https://godoc.org/github.com/bingoohuang/cmd?status.svg)](https://godoc.org/github.com/bingoohuang/cmd)
 
 This package is a small but very useful wrapper around [os/exec.Cmd](https://golang.org/pkg/os/exec/#Cmd) for Linux and macOS that makes it safe and simple to run external commands in highly concurrent, asynchronous, real-time applications. Here's the look and feel:
 
 ```go
-import "github.com/go-cmd/cmd"
+import "github.com/bingoohuang/cmd"
 
 // Start a long-running process, capture stdout and stderr
 findCmd := cmd.NewCmd("find", "/", "--name", "needle")
@@ -40,7 +40,7 @@ default:
 finalStatus := <-statusChan
 ```
 
-That's it, only three methods: `Start`, `Stop`, and `Status`. When possible, it's better to use `go-cmd/Cmd` than `os/exec.Cmd` because `go-cmd/Cmd` provides:
+That's it, only three methods: `Start`, `Stop`, and `Status`. When possible, it's better to use `bingoohuang/Cmd` than `os/exec.Cmd` because `bingoohuang/Cmd` provides:
 
 1. Channel-based fire and forget
 1. Real-time stdout and stderr
@@ -64,7 +64,7 @@ To achieve similar with `os/exec.Cmd` requires everything this package already d
 
 It's common to want to read stdout or stderr _while_ the command is running. The common approach is to call [StdoutPipe](https://golang.org/pkg/os/exec/#Cmd.StdoutPipe) and read from the provided `io.ReadCloser`. This works but it's wrong because it causes a race condition (that `go test -race` detects) and the docs say it's wrong: "it is incorrect to call Wait before all reads from the pipe have completed. [...] it is incorrect to call Run when using StdoutPipe".
 
-The proper solution is to set the `io.Writer` of `Stdout`. To be thread-safe and non-racey, this requires further work to write while possibly N-many goroutines read. `go-cmd/Cmd` has done this work.
+The proper solution is to set the `io.Writer` of `Stdout`. To be thread-safe and non-racey, this requires further work to write while possibly N-many goroutines read. `bingoohuang/Cmd` has done this work.
 
 ### Real-time status
 
@@ -84,11 +84,11 @@ type Status struct {
 
 ### Complete and consolidated return
 
-Speaking of that struct above, Go built-in `Cmd` does not put all the return information in one place, which is fine because Go is awesome! But to save some time, `go-cmd/Cmd` uses the `Status` struct above to convey all information about the command. Even when the command finishes, calling `Status` returns the final status, the same final status sent to the status channel returned by the call to `Start`.
+Speaking of that struct above, Go built-in `Cmd` does not put all the return information in one place, which is fine because Go is awesome! But to save some time, `bingoohuang/Cmd` uses the `Status` struct above to convey all information about the command. Even when the command finishes, calling `Status` returns the final status, the same final status sent to the status channel returned by the call to `Start`.
 
 ### Proper process termination
 
-[os/exec/Cmd.Wait](https://golang.org/pkg/os/exec/#Cmd.Wait) can block even after the command is killed. That can be surprising and cause problems. But `go-cmd/Cmd.Stop` reliably terminates the command, no surprises. The issue has to do with process group IDs. It's common to kill the command PID, but usually one needs to kill its process group ID instead. `go-cmd/Cmd.Stop` implements the necessary low-level magic to make this happen.
+[os/exec/Cmd.Wait](https://golang.org/pkg/os/exec/#Cmd.Wait) can block even after the command is killed. That can be surprising and cause problems. But `bingoohuang/Cmd.Stop` reliably terminates the command, no surprises. The issue has to do with process group IDs. It's common to kill the command PID, but usually one needs to kill its process group ID instead. `bingoohuang/Cmd.Stop` implements the necessary low-level magic to make this happen.
 
 ### 100% test coverage, no race conditions
 
