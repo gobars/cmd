@@ -43,7 +43,8 @@ func TestStdinEnabled(t *testing.T) {
 
 	p.Stdin <- "Input string"
 	p.Stdin <- "Line 2"
-	close(p.Stdin)
+
+	time.Sleep(10 * time.Millisecond)
 
 	err := p.Stop()
 	assert.Nil(t, err)
@@ -51,7 +52,6 @@ func TestStdinEnabled(t *testing.T) {
 	status := <-chanStatuses
 
 	assert.Equal(t, []string{"Input string", "Line 2"}, status.Stdout)
-	_ = p.Stop()
 }
 
 func TestStdinEnabledStream(t *testing.T) {
@@ -65,7 +65,6 @@ func TestStdinEnabledStream(t *testing.T) {
 	p.Stdin <- "Line 2"
 	line = <-p.Stdout
 	assert.Equal(t, "Line 2", line)
-	close(p.Stdin)
 
 	_ = p.Stop()
 }

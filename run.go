@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func (c *Cmd) run() {
+func (c *Cmd) run(started chan bool) {
 	defer func() {
 		c.statusChan <- c.Status() // unblocks Start if caller is waiting
 		close(c.doneChan)
@@ -81,6 +81,8 @@ func (c *Cmd) run() {
 		c.status.StopTs = time.Now().UnixNano()
 		c.done = true
 		c.Unlock()
+
+		started <- false
 		return
 	}
 
@@ -91,6 +93,8 @@ func (c *Cmd) run() {
 	c.status.StartTs = now.UnixNano()
 	c.started = true
 	c.Unlock()
+
+	started <- true
 
 	//  /////////////// Wait for command to finish or be killed
 	err := cmd.Wait()

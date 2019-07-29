@@ -63,14 +63,19 @@ import (
 // always returns the same channel.
 func (c *Cmd) Start() <-chan Status {
 	c.Lock()
-	defer c.Unlock()
-
 	if c.statusChan != nil {
+		c.Unlock()
 		return c.statusChan
 	}
 
 	c.statusChan = make(chan Status, 1)
-	go c.run()
+	started := make(chan bool)
+	go c.run(started)
+
+	c.Unlock()
+
+	<-started
+
 	return c.statusChan
 }
 
