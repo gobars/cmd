@@ -53,10 +53,27 @@ func Buffered(buffered bool) OptionFn {
 	return func(options *Options) { options.Buffered = buffered }
 }
 
-func Streaming(streaming bool) OptionFn {
-	return func(options *Options) { options.Streaming = streaming }
+func Streaming() OptionFn {
+	return func(options *Options) { options.Streaming = true }
+}
+
+func Stdin() OptionFn {
+	return func(options *Options) { options.StdinEnabled = true }
 }
 
 func (c *Cmd) Options(optionFns ...OptionFn) {
 	c.applyOption(createOption(optionFns))
+}
+func SafeClose(ch chan string) (justClosed bool) {
+	defer func() {
+		if recover() != nil {
+			// The return result can be altered
+			// in a defer function call.
+			justClosed = false
+		}
+	}()
+
+	// assume ch != nil here.
+	close(ch)   // panic if ch is closed
+	return true // <=> justClosed = true; return
 }

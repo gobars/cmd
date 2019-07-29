@@ -37,5 +37,9 @@ func (c *Cmd) applyOption(options Options) {
 		c.Stdout = make(chan string, DefaultStreamChanSize)
 		c.Stderr = make(chan string, DefaultStreamChanSize)
 	}
-	c.Timeout = options.Timeout
+	c.timeout = options.Timeout
+
+	if options.StdinEnabled {
+		c.Stdin = make(chan string)
+	}
 }

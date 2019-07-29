@@ -15,8 +15,10 @@ type Cmd struct {
 	Env  []string
 	Dir  string
 
-	Stdout     chan string   // streaming STDOUT if enabled, else nil (see Options)
-	Stderr     chan string   // streaming STDERR if enabled, else nil (see Options)
+	Stdin  chan string
+	Stdout chan string // streaming STDOUT if enabled, else nil (see Options)
+	Stderr chan string // streaming STDERR if enabled, else nil (see Options)
+
 	statusChan chan Status   // nil until Start() called
 	doneChan   chan struct{} // closed when done running
 
@@ -32,7 +34,7 @@ type Cmd struct {
 	stdout    *OutputBuffer // low-level stdout buffering and streaming
 	stderr    *OutputBuffer // low-level stderr buffering and streaming
 	status    Status
-	Timeout   time.Duration
+	timeout   time.Duration
 }
 
 // Status represents the running status and consolidated return of a Cmd. It can
@@ -75,6 +77,9 @@ type Options struct {
 	// faster and more efficient than polling Cmd.Status. The caller must read both
 	// streaming channels, else lines are dropped silently.
 	Streaming bool
+
+	// 是否激活标准输入
+	StdinEnabled bool
 
 	// Set timeout for execution
 	Timeout time.Duration

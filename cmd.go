@@ -92,6 +92,11 @@ func (c *Cmd) Stop() error {
 	// status.Complete = false
 	c.stopped = true
 
+	if c.Stdin != nil {
+		SafeClose(c.Stdin)
+		c.Stdin = nil
+	}
+
 	// Signal the process group (-pid), not just the process, so that the process
 	// and all its children are signaled. Else, child procs can keep running and
 	// keep the stdout/stderr fd open and cause cmd.Wait to hang.

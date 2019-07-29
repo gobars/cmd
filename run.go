@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -17,10 +18,10 @@ func (c *Cmd) run() {
 
 	// /////////////// Setup command
 	ctx := context.Background()
-	if c.Timeout > 0 {
+	if c.timeout > 0 {
 		// Create a new context and add a timeout to it
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, c.Timeout)
+		ctx, cancel = context.WithTimeout(ctx, c.timeout)
 		defer cancel() // The cancel should be deferred so resources are cleaned up
 	}
 	// Create the command with our context
@@ -30,6 +31,18 @@ func (c *Cmd) run() {
 	// process group. This allows Stop to SIGTERM the cmd's process group
 	// without killing this process (i.e. this code here).
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	if c.Stdin != nil {
+		stdin, _ := cmd.StdinPipe()
+		go func() {
+			for in := range c.Stdin {
+				buf := bytes.NewBufferString(in)
+				buf.WriteString("\n")
+				_, _ = stdin.Write(buf.Bytes())
+			}
+			_ = stdin.Close()
+		}()
+	}
 
 	// Write stdout and stderr to buffers that are safe to read while writing
 	// and don't cause a race condition.
