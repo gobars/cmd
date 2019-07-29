@@ -4,8 +4,8 @@ import (
 	"time"
 )
 
-func Run(name string, args ...string) (*Cmd, Status) {
-	p := NewCmd(name, args...)
+func Run(cmdparts ...string) (*Cmd, Status) {
+	p := NewCmd(cmdparts...)
 	return p, <-p.Start()
 }
 

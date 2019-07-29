@@ -111,3 +111,8 @@ In addition to 100% test coverage and no race conditions, this package is active
 ## Acknowledgements
 
 [Brian Ip](https://github.com/BrianIp) wrote the original code to get the exit status. Strangely, Go doesn't just provide this, it requires magic like `exiterr.Sys().(syscall.WaitStatus)` and more.
+
+
+## Thanks
+
+1. [Go exec helpers for better using processes](https://github.com/ionrock/procs)

@@ -1,11 +1,20 @@
 package cmd
 
-import "sync"
+import (
+	"sync"
+)
 
 // NewCmd creates a new Cmd for the given command name and arguments. The command
 // is not started until Start is called. Output buffering is on, streaming output
 // is off. To control output, use NewCmdOptions instead.
-func NewCmd(name string, args ...string) *Cmd {
+func NewCmd(cmdparts ...string) *Cmd {
+	name := cmdparts[0]
+	var args []string
+	if len(cmdparts) == 1 {
+		args = []string{}
+	} else {
+		args = cmdparts[1:]
+	}
 	return &Cmd{
 		Name:     name,
 		Args:     args,
@@ -25,8 +34,8 @@ func NewCmd(name string, args ...string) *Cmd {
 
 // NewCmdOptions creates a new Cmd with options. The command is not started
 // until Start is called.
-func NewCmdOptions(options Options, name string, args ...string) *Cmd {
-	c := NewCmd(name, args...)
+func NewCmdOptions(options Options, cmdparts ...string) *Cmd {
+	c := NewCmd(cmdparts...)
 	c.applyOption(options)
 	return c
 }
