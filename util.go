@@ -4,10 +4,7 @@ import (
 	"time"
 )
 
-func Run(cmdparts ...string) (*Cmd, Status) {
-	p := NewCmd(cmdparts...)
-	return p, <-p.Start()
-}
+func Run(cmdparts ...string) (*Cmd, Status) { p := NewCmd(cmdparts...); return p, <-p.Start() }
 
 func BashLiner(bash string, liner func(line string) bool, optionFns ...OptionFn) (*Cmd, Status) {
 	p := NewCmd("bash", "-c", bash)
@@ -45,25 +42,13 @@ func createOption(optionFns []OptionFn) Options {
 
 type OptionFn func(options *Options)
 
-func Timeout(timeout time.Duration) OptionFn {
-	return func(options *Options) { options.Timeout = timeout }
-}
+func Timeout(timeout time.Duration) OptionFn { return func(opt *Options) { opt.Timeout = timeout } }
+func Buffered(buffered bool) OptionFn        { return func(opt *Options) { opt.Buffered = buffered } }
+func Streaming() OptionFn                    { return func(opt *Options) { opt.Streaming = true } }
+func Stdin() OptionFn                        { return func(opt *Options) { opt.StdinEnabled = true } }
 
-func Buffered(buffered bool) OptionFn {
-	return func(options *Options) { options.Buffered = buffered }
-}
+func (c *Cmd) Options(fns ...OptionFn) { c.applyOption(createOption(fns)) }
 
-func Streaming() OptionFn {
-	return func(options *Options) { options.Streaming = true }
-}
-
-func Stdin() OptionFn {
-	return func(options *Options) { options.StdinEnabled = true }
-}
-
-func (c *Cmd) Options(optionFns ...OptionFn) {
-	c.applyOption(createOption(optionFns))
-}
 func SafeClose(ch chan string) (justClosed bool) {
 	defer func() {
 		if recover() != nil {
