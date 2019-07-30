@@ -1,4 +1,4 @@
-module github.com/bingoohuang/cmd
+module github.com/gobars/cmd
 
 go 1.12
 

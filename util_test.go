@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bingoohuang/cmd"
+	"github.com/gobars/cmd"
 	"github.com/stretchr/testify/assert"
 )
 

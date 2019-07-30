@@ -29,7 +29,7 @@ import (
 // a Go standard library os/exec.Command:
 //
 //   import "os/exec"
-//   import "github.com/bingoohuang/cmd"
+//   import "github.com/gobars/cmd"
 //   runnableCmd := exec.Command(...)
 //   stdout := cmd.NewOutputBuffer()
 //   runnableCmd.Stdout = stdout

@@ -16,7 +16,7 @@ import "bytes"
 // OutputStream directly with a Go standard library os/exec.Command:
 //
 //   import "os/exec"
-//   import "github.com/bingoohuang/cmd"
+//   import "github.com/gobars/cmd"
 //
 //   stdoutChan := make(chan string, 100)
 //   go func() {

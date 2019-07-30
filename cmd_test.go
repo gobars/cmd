@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bingoohuang/cmd"
 	"github.com/go-test/deep"
+	"github.com/gobars/cmd"
 )
 
 func TestTimeout(t *testing.T) {

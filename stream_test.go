@@ -3,8 +3,8 @@ package cmd_test
 import (
 	"testing"
 
-	"github.com/bingoohuang/cmd"
 	"github.com/go-test/deep"
+	"github.com/gobars/cmd"
 )
 
 func TestStreamingMultipleLines(t *testing.T) {
