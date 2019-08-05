@@ -1,4 +1,4 @@
-# bingoohuang/dmd
+# gobars/cmd
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/gobars/cmd)](https://goreportcard.com/report/github.com/gobars/cmd) [![Build Status](https://travis-ci.org/gobars/cmd.svg?branch=master)](https://travis-ci.org/gobars/cmd) [![Coverage Status](https://coveralls.io/repos/github/gobars/cmd/badge.svg?branch=master)](https://coveralls.io/github/gobars/cmd?branch=master) [![GoDoc](https://godoc.org/github.com/gobars/cmd?status.svg)](https://godoc.org/github.com/gobars/cmd)
 
