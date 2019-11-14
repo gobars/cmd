@@ -14,6 +14,11 @@ func TestBash(t *testing.T) {
 	assert.Equal(t, []string{"Hello"}, status.Stdout)
 }
 
+func TestBashEnv(t *testing.T) {
+	_, status := cmd.Bash(`echo $MYSQLPWD`, cmd.Env("MYSQLPWD=!abc"))
+	assert.Equal(t, []string{"!abc"}, status.Stdout)
+}
+
 func TestBashBufferedOff(t *testing.T) {
 	_, status := cmd.Bash(`echo "Hello"`, cmd.Timeout(1*time.Second),
 		cmd.Buffered(false))
