@@ -50,6 +50,7 @@ func NewOutputBuffer() *OutputBuffer {
 		lines: []string{},
 		Mutex: &sync.Mutex{},
 	}
+
 	return out
 }
 
@@ -58,6 +59,7 @@ func NewOutputBuffer() *OutputBuffer {
 func (rw *OutputBuffer) Write(p []byte) (n int, err error) {
 	rw.Lock()
 	defer rw.Unlock()
+
 	return rw.buf.Write(p) // and bytes.Buffer implements io.Writer
 }
 
@@ -73,5 +75,6 @@ func (rw *OutputBuffer) Lines() []string {
 	for s.Scan() {
 		rw.lines = append(rw.lines, s.Text())
 	}
+
 	return rw.lines
 }

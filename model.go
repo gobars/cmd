@@ -83,4 +83,6 @@ type Options struct {
 
 	// Set timeout for execution
 	Timeout time.Duration
+
+	Env []string
 }

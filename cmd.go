@@ -70,6 +70,7 @@ func (c *Cmd) Start() <-chan Status {
 
 	c.statusChan = make(chan Status, 1)
 	started := make(chan bool)
+
 	go c.run(started)
 
 	c.Unlock()
@@ -143,6 +144,7 @@ func (c *Cmd) Status() Status {
 				c.stdout = nil // release buffers
 				c.stderr = nil
 			}
+
 			c.final = true
 		}
 	} else {

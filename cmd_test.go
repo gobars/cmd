@@ -53,20 +53,26 @@ func TestCmdOK(t *testing.T) {
 		Stdout:   []string{"foo"},
 		Stderr:   []string{},
 	}
+
 	if gotStatus.StartTs < now {
 		t.Error("StartTs < now")
 	}
+
 	if gotStatus.StopTs < gotStatus.StartTs {
 		t.Error("StopTs < StartTs")
 	}
+
 	gotStatus.StartTs = 0
 	gotStatus.StopTs = 0
+
 	if diffs := deep.Equal(gotStatus, expectStatus); diffs != nil {
 		t.Error(diffs)
 	}
+
 	if gotStatus.PID < 0 {
 		t.Errorf("got PID %d, expected non-zero", gotStatus.PID)
 	}
+
 	if gotStatus.Runtime < 0 {
 		t.Errorf("got runtime %f, expected non-zero", gotStatus.Runtime)
 	}
@@ -87,18 +93,21 @@ func TestCmdNonzeroExit(t *testing.T) {
 	}
 	gotStatus.StartTs = 0
 	gotStatus.StopTs = 0
+
 	if diffs := deep.Equal(gotStatus, expectStatus); diffs != nil {
 		t.Error(diffs)
 	}
+
 	if gotStatus.PID < 0 {
 		t.Errorf("got PID %d, expected non-zero", gotStatus.PID)
 	}
+
 	if gotStatus.Runtime < 0 {
 		t.Errorf("got runtime %f, expected non-zero", gotStatus.Runtime)
 	}
 }
 
-func TestCmdStop(t *testing.T) {
+func TestCmdStop(t *testing.T) { // nolint funlen
 	// Count to 3 sleeping 5s between counts. The long sleep is because we want
 	// to kill the proc right after count "1" to ensure Stdout only contains "1"
 	// and also to ensure that the proc is really killed instantly because if
@@ -119,7 +128,9 @@ func TestCmdStop(t *testing.T) {
 
 	// The final status should be returned instantly
 	timeout := time.After(1 * time.Second)
+
 	var gotStatus cmd.Status
+
 	select {
 	case gotStatus = <-statusChan:
 	case <-timeout:
@@ -129,9 +140,11 @@ func TestCmdStop(t *testing.T) {
 	start := time.Unix(0, gotStatus.StartTs)
 	stop := time.Unix(0, gotStatus.StopTs)
 	d := stop.Sub(start).Seconds()
+
 	if d < 0.90 || d > 2 {
 		t.Errorf("stop - start time not between 0.9s and 2.0s: %s - %s = %f", stop, start, d)
 	}
+
 	gotStatus.StartTs = 0
 	gotStatus.StopTs = 0
 
@@ -145,12 +158,15 @@ func TestCmdStop(t *testing.T) {
 		Stdout:   []string{"1"},
 		Stderr:   []string{},
 	}
+
 	if diffs := deep.Equal(gotStatus, expectStatus); diffs != nil {
 		t.Error(diffs)
 	}
+
 	if gotStatus.PID < 0 {
 		t.Errorf("got PID %d, expected non-zero", gotStatus.PID)
 	}
+
 	if gotStatus.Runtime < 0 {
 		t.Errorf("got runtime %f, expected non-zero", gotStatus.Runtime)
 	}
@@ -183,6 +199,7 @@ func TestCmdNotStarted(t *testing.T) {
 		Stdout:   nil,
 		Stderr:   nil,
 	}
+
 	if diffs := deep.Equal(gotStatus, expectStatus); diffs != nil {
 		t.Error(diffs)
 	}
@@ -193,15 +210,18 @@ func TestCmdNotStarted(t *testing.T) {
 	}
 }
 
-func TestCmdOutput(t *testing.T) {
+func TestCmdOutput(t *testing.T) { // nolint funlen
 	tmpfile, err := ioutil.TempFile("", "cmd.TestCmdOutput")
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer os.Remove(tmpfile.Name())
+
 	if err := tmpfile.Close(); err != nil {
 		t.Fatal(err)
 	}
+
 	t.Logf("temp file: %s", tmpfile.Name())
 	os.Remove(tmpfile.Name())
 
@@ -213,22 +233,29 @@ func TestCmdOutput(t *testing.T) {
 		if _, result := cmd.Run("touch", file); result.Error != nil {
 			t.Fatal(err)
 		}
+
 		time.Sleep(600 * time.Millisecond)
 	}
+
 	var s cmd.Status
+
 	var stdout []string
 
 	touchFile(tmpfile.Name())
+
 	s = p.Status()
 	stdout = []string{"1"}
+
 	if diffs := deep.Equal(s.Stdout, stdout); diffs != nil {
 		t.Log(s.Stdout)
 		t.Error(diffs)
 	}
 
 	touchFile(tmpfile.Name())
+
 	s = p.Status()
 	stdout = []string{"1", "2"}
+
 	if diffs := deep.Equal(s.Stdout, stdout); diffs != nil {
 		t.Log(s.Stdout)
 		t.Error(diffs)
@@ -237,6 +264,7 @@ func TestCmdOutput(t *testing.T) {
 	// No more output yet
 	s = p.Status()
 	stdout = []string{"1", "2"}
+
 	if diffs := deep.Equal(s.Stdout, stdout); diffs != nil {
 		t.Log(s.Stdout)
 		t.Error(diffs)
@@ -245,8 +273,10 @@ func TestCmdOutput(t *testing.T) {
 	// +2 lines
 	touchFile(tmpfile.Name())
 	touchFile(tmpfile.Name())
+
 	s = p.Status()
 	stdout = []string{"1", "2", "3", "4"}
+
 	if diffs := deep.Equal(s.Stdout, stdout); diffs != nil {
 		t.Log(s.Stdout)
 		t.Error(diffs)
@@ -273,6 +303,7 @@ func TestCmdNotFound(t *testing.T) {
 		Stdout:   nil,
 		Stderr:   nil,
 	}
+
 	if diffs := deep.Equal(gotStatus, expectStatus); diffs != nil {
 		t.Logf("%+v", gotStatus)
 		t.Error(diffs)
@@ -291,23 +322,29 @@ func TestCmdLost(t *testing.T) {
 
 	// Get the PID and kill it
 	s := p.Status()
+
 	if s.PID <= 0 {
 		t.Fatalf("got PID %d, expected PID > 0", s.PID)
 	}
+
 	pgid, err := syscall.Getpgid(s.PID)
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	_ = syscall.Kill(-pgid, syscall.SIGKILL) // -pid = process group of pid
 
 	// Even though killed externally, our wait should return instantly
 	timeout := time.After(1 * time.Second)
+
 	var gotStatus cmd.Status
 	select {
 	case gotStatus = <-statusChan:
 	case <-timeout:
 		t.Fatal("timeout waiting for statusChan")
 	}
+
 	gotStatus.Runtime = 0 // nondeterministic
 	gotStatus.StartTs = 0
 	gotStatus.StopTs = 0
@@ -322,21 +359,25 @@ func TestCmdLost(t *testing.T) {
 		Stdout:   []string{"1"},
 		Stderr:   []string{},
 	}
+
 	if diffs := deep.Equal(gotStatus, expectStatus); diffs != nil {
 		t.Logf("%+v\n", gotStatus)
 		t.Error(diffs)
 	}
 }
 
-func TestCmdBothOutput(t *testing.T) {
+func TestCmdBothOutput(t *testing.T) { // nolint gocognit
 	tmpfile, err := ioutil.TempFile("", "cmd.TestStreamingOutput")
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer os.Remove(tmpfile.Name())
+
 	if err := tmpfile.Close(); err != nil {
 		t.Fatal(err)
 	}
+
 	if err := os.Remove(tmpfile.Name()); err != nil {
 		t.Fatal(err)
 	}
@@ -345,6 +386,7 @@ func TestCmdBothOutput(t *testing.T) {
 		if _, result := cmd.Run("touch", file); result.Error != nil {
 			t.Fatal(err)
 		}
+
 		time.Sleep(500 * time.Millisecond)
 	}
 
@@ -368,6 +410,7 @@ func TestCmdBothOutput(t *testing.T) {
 	stderrPrevLine := ""
 	readLines := 3
 	lines := 0
+
 	for i < readLines {
 		i++
 
@@ -375,14 +418,17 @@ func TestCmdBothOutput(t *testing.T) {
 		select {
 		case curLine := <-p.Stdout:
 			t.Logf("got line: '%s'", curLine)
+
 			if curLine == "" {
 				// Shouldn't happen because test/stream doesn't print empty lines.
 				// This indicates a bug in the stream buffer handling.
 				t.Fatal("got empty line")
 			}
+
 			if stdoutPrevLine != "" && curLine == stdoutPrevLine {
 				t.Fatalf("current line == previous line, expected new output:\ncprev: %s\ncur: %s\n", stdoutPrevLine, curLine)
 			}
+
 			stdoutPrevLine = curLine
 			lines++
 		case <-timeout:
@@ -394,14 +440,17 @@ func TestCmdBothOutput(t *testing.T) {
 		select {
 		case curLine := <-p.Stderr:
 			t.Logf("got line: '%s'", curLine)
+
 			if curLine == "" {
 				// Shouldn't happen because test/stream doesn't print empty lines.
 				// This indicates a bug in the stream buffer handling.
 				t.Fatal("got empty line")
 			}
+
 			if stderrPrevLine != "" && curLine == stderrPrevLine {
 				t.Fatalf("current line == previous line, expected new output:\ncprev: %s\ncur: %s\n", stderrPrevLine, curLine)
 			}
+
 			stderrPrevLine = curLine
 			lines++
 		case <-timeout:
@@ -418,9 +467,11 @@ func TestCmdBothOutput(t *testing.T) {
 	}
 
 	s := p.Status()
+
 	if len(s.Stdout) < readLines {
 		t.Fatalf("read %d lines from buffered STDOUT, expected %d", len(s.Stdout), readLines)
 	}
+
 	if len(s.Stderr) < readLines {
 		t.Fatalf("read %d lines from buffered STDERR, expected %d", len(s.Stderr), readLines)
 	}
@@ -439,15 +490,18 @@ func TestCmdBothOutput(t *testing.T) {
 	}
 }
 
-func TestCmdOnlyStreamingOutput(t *testing.T) {
+func TestCmdOnlyStreamingOutput(t *testing.T) { // nolint gocognit
 	tmpfile, err := ioutil.TempFile("", "cmd.TestStreamingOutput")
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer os.Remove(tmpfile.Name())
+
 	if err := tmpfile.Close(); err != nil {
 		t.Fatal(err)
 	}
+
 	if err := os.Remove(tmpfile.Name()); err != nil {
 		t.Fatal(err)
 	}
@@ -456,6 +510,7 @@ func TestCmdOnlyStreamingOutput(t *testing.T) {
 		if _, result := cmd.Run("touch", file); result.Error != nil {
 			t.Fatal(err)
 		}
+
 		time.Sleep(500 * time.Millisecond)
 	}
 
@@ -479,6 +534,7 @@ func TestCmdOnlyStreamingOutput(t *testing.T) {
 	stderrPrevLine := ""
 	readLines := 3
 	lines := 0
+
 	for i < readLines {
 		i++
 		t.Log(i)
@@ -487,14 +543,17 @@ func TestCmdOnlyStreamingOutput(t *testing.T) {
 		select {
 		case curLine := <-p.Stdout:
 			t.Logf("got line: '%s'", curLine)
+
 			if curLine == "" {
 				// Shouldn't happen because test/stream doesn't print empty lines.
 				// This indicates a bug in the stream buffer handling.
 				t.Fatal("got empty line")
 			}
+
 			if stdoutPrevLine != "" && curLine == stdoutPrevLine {
 				t.Fatalf("current line == previous line, expected new output:\ncprev: %s\ncur: %s\n", stdoutPrevLine, curLine)
 			}
+
 			stdoutPrevLine = curLine
 			lines++
 		case <-timeout:
@@ -506,14 +565,17 @@ func TestCmdOnlyStreamingOutput(t *testing.T) {
 		select {
 		case curLine := <-p.Stderr:
 			t.Logf("got line: '%s'", curLine)
+
 			if curLine == "" {
 				// Shouldn't happen because test/stream doesn't print empty lines.
 				// This indicates a bug in the stream buffer handling.
 				t.Fatal("got empty line")
 			}
+
 			if stderrPrevLine != "" && curLine == stderrPrevLine {
 				t.Fatalf("current line == previous line, expected new output:\ncprev: %s\ncur: %s\n", stderrPrevLine, curLine)
 			}
+
 			stderrPrevLine = curLine
 			lines++
 		case <-timeout:
@@ -530,9 +592,11 @@ func TestCmdOnlyStreamingOutput(t *testing.T) {
 	}
 
 	s := p.Status()
+
 	if len(s.Stdout) != 0 {
 		t.Fatalf("read %d lines from buffered STDOUT, expected 0", len(s.Stdout))
 	}
+
 	if len(s.Stderr) != 0 {
 		t.Fatalf("read %d lines from buffered STDERR, expected 0", len(s.Stderr))
 	}
@@ -615,20 +679,26 @@ func TestCmdEnvOK(t *testing.T) {
 		Stdout:   []string{"FOO=foo"},
 		Stderr:   []string{},
 	}
+
 	if gotStatus.StartTs < now {
 		t.Error("StartTs < now")
 	}
+
 	if gotStatus.StopTs < gotStatus.StartTs {
 		t.Error("StopTs < StartTs")
 	}
+
 	gotStatus.StartTs = 0
 	gotStatus.StopTs = 0
+
 	if diffs := deep.Equal(gotStatus, expectStatus); diffs != nil {
 		t.Error(diffs)
 	}
+
 	if gotStatus.PID < 0 {
 		t.Errorf("got PID %d, expected non-zero", gotStatus.PID)
 	}
+
 	if gotStatus.Runtime < 0 {
 		t.Errorf("got runtime %f, expected non-zero", gotStatus.Runtime)
 	}
@@ -639,12 +709,15 @@ func TestCmdNoOutput(t *testing.T) {
 	p := cmd.NewCmdOptions(cmd.Options{Buffered: false, Streaming: false},
 		"echo", "hell-world")
 	s := <-p.Start()
+
 	if s.Exit != 0 {
 		t.Errorf("got exit %d, expected 0", s.Exit)
 	}
+
 	if len(s.Stdout) != 0 {
 		t.Errorf("got stdout, expected no output: %v", s.Stdout)
 	}
+
 	if len(s.Stderr) != 0 {
 		t.Errorf("got stderr, expected no output: %v", s.Stderr)
 	}

@@ -5,12 +5,12 @@ import "fmt"
 // --------------------------------------------------------------------------
 
 const (
-	// DEFAULT_LINE_BUFFER_SIZE is the default size of the OutputStream line buffer.
+	// DefaultLineBufferSize is the default size of the OutputStream line buffer.
 	// The default value is usually sufficient, but if ErrLineBufferOverflow errors
 	// occur, try increasing the size by calling OutputBuffer.SetLineBufferSize.
 	DefaultLineBufferSize = 16384
 
-	// DEFAULT_STREAM_CHAN_SIZE is the default string channel size for a Cmd when
+	// DefaultStreamChanSize is the default string channel size for a Cmd when
 	// Options.Streaming is true. The string channel size can have a minor
 	// performance impact if too small by causing OutputStream.Write to block
 	// excessively.

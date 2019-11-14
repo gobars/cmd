@@ -59,6 +59,7 @@ func NewOutputStream(streamChan chan string) *OutputStream {
 		buf:      make([]byte, DefaultLineBufferSize),
 		lastChar: 0,
 	}
+
 	return out
 }
 
@@ -102,11 +103,13 @@ LINES:
 	if firstChar < n {
 		remain := len(p[firstChar:])
 		bufFree := len(rw.buf[rw.lastChar:])
+
 		if remain > bufFree {
 			var line string
 			if rw.lastChar > 0 {
 				line = string(rw.buf[0:rw.lastChar])
 			}
+
 			line += string(p[firstChar:])
 			err = ErrLineBufferOverflow{
 				Line:       line,
@@ -114,8 +117,10 @@ LINES:
 				BufferFree: bufFree,
 			}
 			n = firstChar
+
 			return // implicit
 		}
+
 		copy(rw.buf[rw.lastChar:], p[firstChar:])
 		rw.lastChar += remain
 	}

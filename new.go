@@ -8,13 +8,16 @@ import (
 // is not started until Start is called. Output buffering is on, streaming output
 // is off. To control output, use NewCmdOptions instead.
 func NewCmd(cmdparts ...string) *Cmd {
-	name := cmdparts[0]
 	var args []string
+
 	if len(cmdparts) == 1 {
 		args = []string{}
 	} else {
 		args = cmdparts[1:]
 	}
+
+	name := cmdparts[0]
+
 	return &Cmd{
 		Name:     name,
 		Args:     args,
@@ -37,6 +40,7 @@ func NewCmd(cmdparts ...string) *Cmd {
 func NewCmdOptions(options Options, cmdparts ...string) *Cmd {
 	c := NewCmd(cmdparts...)
 	c.applyOption(options)
+
 	return c
 }
 
@@ -46,9 +50,12 @@ func (c *Cmd) applyOption(options Options) {
 		c.Stdout = make(chan string, DefaultStreamChanSize)
 		c.Stderr = make(chan string, DefaultStreamChanSize)
 	}
+
 	c.timeout = options.Timeout
 
 	if options.StdinEnabled {
 		c.Stdin = make(chan string)
 	}
+
+	c.Env = options.Env
 }

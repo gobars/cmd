@@ -20,9 +20,11 @@ func TestStreamingMultipleLines(t *testing.T) {
 	// Write two short lines
 	input := "foo\nbar\n"
 	n, err := out.Write([]byte(input))
+
 	if n != len(input) {
 		t.Errorf("Write n = %d, expected %d", n, len(input))
 	}
+
 	if err != nil {
 		t.Errorf("got err '%v', expected nil", err)
 	}
@@ -52,7 +54,7 @@ func TestStreamingMultipleLines(t *testing.T) {
 	}
 }
 
-func TestStreamingBlankLines(t *testing.T) {
+func TestStreamingBlankLines(t *testing.T) { // nolint funlen
 	lines := make(chan string, 5)
 	out := cmd.NewOutputStream(lines)
 
@@ -61,12 +63,15 @@ func TestStreamingBlankLines(t *testing.T) {
 	expectLines := []string{"foo", "", "bar"}
 	gotLines := []string{}
 	n, err := out.Write([]byte(input))
+
 	if n != len(input) {
 		t.Errorf("Write n = %d, expected %d", n, len(input))
 	}
+
 	if err != nil {
 		t.Errorf("got err '%v', expected nil", err)
 	}
+
 LINES1:
 	for {
 		select {
@@ -76,6 +81,7 @@ LINES1:
 			break LINES1
 		}
 	}
+
 	if diffs := deep.Equal(gotLines, expectLines); diffs != nil {
 		t.Error(diffs)
 	}
@@ -85,12 +91,15 @@ LINES1:
 	expectLines = []string{"", "", ""}
 	gotLines = []string{}
 	n, err = out.Write([]byte(input))
+
 	if n != len(input) {
 		t.Errorf("Write n = %d, expected %d", n, len(input))
 	}
+
 	if err != nil {
 		t.Errorf("got err '%v', expected nil", err)
 	}
+
 LINES2:
 	for {
 		select {
@@ -100,6 +109,7 @@ LINES2:
 			break LINES2
 		}
 	}
+
 	if diffs := deep.Equal(gotLines, expectLines); diffs != nil {
 		t.Error(diffs)
 	}
@@ -109,12 +119,15 @@ LINES2:
 	expectLines = []string{"foo", "", ""}
 	gotLines = []string{}
 	n, err = out.Write([]byte(input))
+
 	if n != len(input) {
 		t.Errorf("Write n = %d, expected %d", n, len(input))
 	}
+
 	if err != nil {
 		t.Errorf("got err '%v', expected nil", err)
 	}
+
 LINES3:
 	for {
 		select {
@@ -124,6 +137,7 @@ LINES3:
 			break LINES3
 		}
 	}
+
 	if diffs := deep.Equal(gotLines, expectLines); diffs != nil {
 		t.Error(diffs)
 	}
@@ -136,14 +150,19 @@ func TestStreamingCarriageReturn(t *testing.T) {
 
 	input := "foo\r\nbar\r\n"
 	expectLines := []string{"foo", "bar"}
+
 	var gotLines []string
+
 	n, err := out.Write([]byte(input))
+
 	if n != len(input) {
 		t.Errorf("Write n = %d, expected %d", n, len(input))
 	}
+
 	if err != nil {
 		t.Errorf("got err '%v', expected nil", err)
 	}
+
 LINES1:
 	for {
 		select {
@@ -153,6 +172,7 @@ LINES1:
 			break LINES1
 		}
 	}
+
 	if diffs := deep.Equal(gotLines, expectLines); diffs != nil {
 		t.Error(diffs)
 	}
@@ -169,9 +189,11 @@ func TestStreamingLineBuffering(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		input := "foo"
 		n, err := out.Write([]byte(input))
+
 		if err != nil {
 			t.Errorf("got err '%v', expected nil", err)
 		}
+
 		if n != len(input) {
 			t.Errorf("Write n = %d, expected %d", n, len(input))
 		}
@@ -188,9 +210,11 @@ func TestStreamingLineBuffering(t *testing.T) {
 	// Write a line with newline that terminate the previous input
 	input := "bar\n"
 	n, err := out.Write([]byte(input))
+
 	if err != nil {
 		t.Errorf("got err '%v', expected nil", err)
 	}
+
 	if n != len(input) {
 		t.Errorf("Write n = %d, expected %d", n, len(input))
 	}
@@ -210,7 +234,7 @@ func TestStreamingLineBuffering(t *testing.T) {
 	}
 }
 
-func TestStreamingErrLineBufferOverflow1(t *testing.T) {
+func TestStreamingErrLineBufferOverflow1(t *testing.T) { // nolint funlen
 	// Overflow the line buffer in 1 write. The first line "bc" is sent,
 	// but the remaining line can't be buffered because it's +2 bytes larger
 	// than the line buffer.
@@ -218,9 +242,11 @@ func TestStreamingErrLineBufferOverflow1(t *testing.T) {
 	longLine[0] = 'b'
 	longLine[1] = 'c'
 	longLine[2] = '\n'
+
 	for i := 3; i < cmd.DefaultLineBufferSize; i++ {
 		longLine[i] = 'A'
 	}
+
 	// These 2 chars cause ErrLineBufferOverflow:
 	longLine[cmd.DefaultLineBufferSize] = 'z'
 	longLine[cmd.DefaultLineBufferSize+1] = 'z'
@@ -230,20 +256,25 @@ func TestStreamingErrLineBufferOverflow1(t *testing.T) {
 
 	// Write the long line, it should only write (n) 3 bytes for "bc\n"
 	n, err := out.Write(longLine)
+
 	if n != 3 { // "bc\n"
 		t.Errorf("Write n = %d, expected 3", n)
 	}
+
 	switch errt := err.(type) {
 	case cmd.ErrLineBufferOverflow:
 		if errt.BufferSize != cmd.DefaultLineBufferSize {
 			t.Errorf("ErrLineBufferOverflow.BufferSize = %d, expected %d", errt.BufferSize, cmd.DefaultLineBufferSize)
 		}
+
 		if errt.BufferFree != cmd.DefaultLineBufferSize {
 			t.Errorf("ErrLineBufferOverflow.BufferFree = %d, expected %d", errt.BufferFree, cmd.DefaultLineBufferSize)
 		}
+
 		if errt.Line != string(longLine[3:]) {
 			t.Errorf("ErrLineBufferOverflow.Line = '%s', expected '%s'", errt.Line, string(longLine[3:]))
 		}
+
 		if errt.Error() == "" {
 			t.Errorf("ErrLineBufferOverflow.Error() string is empty, expected something")
 		}
@@ -258,6 +289,7 @@ func TestStreamingErrLineBufferOverflow1(t *testing.T) {
 	default:
 		t.Fatal("blocked on <-lines")
 	}
+
 	if gotLine != "bc" {
 		t.Errorf("got line '%s', expected 'bc'", gotLine)
 	}
@@ -265,9 +297,11 @@ func TestStreamingErrLineBufferOverflow1(t *testing.T) {
 	// Streaming should still work after an overflow. However, Go is going to
 	// stop any time Write() returns an error.
 	n, err = out.Write([]byte("foo\n"))
+
 	if n != 4 {
 		t.Errorf("got n %d, expected 4", n)
 	}
+
 	if err != nil {
 		t.Errorf("got err '%v', expected nil", err)
 	}
@@ -277,6 +311,7 @@ func TestStreamingErrLineBufferOverflow1(t *testing.T) {
 	default:
 		t.Fatal("blocked on <-lines")
 	}
+
 	if gotLine != "foo" {
 		t.Errorf("got line: '%s', expected 'foo'", gotLine)
 	}
@@ -291,9 +326,11 @@ func TestStreamingErrLineBufferOverflow2(t *testing.T) {
 	// Get "bar" into the buffer by omitting its newline
 	input := "foo\nbar"
 	n, err := out.Write([]byte(input))
+
 	if err != nil {
 		t.Errorf("got err '%v', expected nil", err)
 	}
+
 	if n != len(input) {
 		t.Errorf("Write n = %d, expected %d", n, len(input))
 	}
@@ -305,6 +342,7 @@ func TestStreamingErrLineBufferOverflow2(t *testing.T) {
 	default:
 		t.Fatal("blocked on <-lines")
 	}
+
 	if gotLine != "foo" {
 		t.Errorf("got line '%s', expected 'foo'", gotLine)
 	}
@@ -314,10 +352,12 @@ func TestStreamingErrLineBufferOverflow2(t *testing.T) {
 	for i := 0; i < cmd.DefaultLineBufferSize; i++ {
 		longLine[i] = 'X'
 	}
+
 	n, err = out.Write(longLine)
 	if n != 0 {
 		t.Errorf("Write n = %d, expected 0", n)
 	}
+
 	switch errt := err.(type) {
 	case cmd.ErrLineBufferOverflow:
 		// Buffer has "bar" so it's free is total - 3
@@ -342,9 +382,11 @@ func TestStreamingSetLineBufferSize(t *testing.T) {
 	longLine[0] = 'b'
 	longLine[1] = 'c'
 	longLine[2] = '\n'
+
 	for i := 3; i < cmd.DefaultLineBufferSize; i++ {
 		longLine[i] = 'A'
 	}
+
 	longLine[cmd.DefaultLineBufferSize] = 'z'
 	longLine[cmd.DefaultLineBufferSize+1] = '\n'
 
@@ -353,9 +395,11 @@ func TestStreamingSetLineBufferSize(t *testing.T) {
 	out.SetLineBufferSize(cmd.DefaultLineBufferSize * 2)
 
 	n, err := out.Write(longLine)
+
 	if err != nil {
 		t.Errorf("error '%v', expected nil", err)
 	}
+
 	if n != len(longLine) {
 		t.Errorf("Write n = %d, expected %d", n, len(longLine))
 	}
@@ -367,6 +411,7 @@ func TestStreamingSetLineBufferSize(t *testing.T) {
 	default:
 		t.Fatal("blocked on <-lines")
 	}
+
 	if gotLine != "bc" {
 		t.Errorf("got line '%s', expected 'bc'", gotLine)
 	}
@@ -377,7 +422,9 @@ func TestStreamingSetLineBufferSize(t *testing.T) {
 	default:
 		t.Fatal("blocked on <-lines")
 	}
+
 	expectLine := string(longLine[3 : cmd.DefaultLineBufferSize+1]) // not newline
+
 	if gotLine != expectLine {
 		t.Errorf("got line: '%s', expected '%s'", gotLine, expectLine)
 	}
