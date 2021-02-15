@@ -28,10 +28,7 @@ func (c *Cmd) run(started chan bool) {
 	// Create the command with our context
 	cmd := exec.CommandContext(ctx, c.Name, c.Args...)
 
-	// Set process group ID so the cmd and all its children become a new
-	// process group. This allows Stop to SIGTERM the cmd's process group
-	// without killing this process (i.e. this code here).
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	SetGroupID(cmd)
 
 	c.processStdin(cmd)
 	c.prepareStdoutStderr(cmd)

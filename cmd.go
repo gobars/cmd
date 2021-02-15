@@ -42,7 +42,6 @@
 package cmd
 
 import (
-	"syscall"
 	"time"
 )
 
@@ -103,10 +102,7 @@ func (c *Cmd) Stop() error {
 		c.Stdin = nil
 	}
 
-	// Signal the process group (-pid), not just the process, so that the process
-	// and all its children are signaled. Else, child procs can keep running and
-	// keep the stdout/stderr fd open and cause cmd.Wait to hang.
-	return syscall.Kill(-c.status.PID, syscall.SIGTERM)
+	return SyscallKill(-c.status.PID)
 }
 
 // Status returns the Status of the command at any time. It is safe to call
